@@ -40,7 +40,12 @@ func main() {
 		dealer.Sort()
 		dealer.PrintDeck()
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dealer.Deck)
+		//cards := make([]string, 0)
+		//for _, card := range dealer.Deck.Deck {
+		//	cards = append(cards, card.String())
+		//}
+
+		json.NewEncoder(w).Encode(fmt.Sprintf("%v", fmt.Sprintf("%v", dealer.Deck)))
 	}).Methods("GET")
 
 	// initiliazes a new dealer/deck
@@ -49,7 +54,7 @@ func main() {
 		dealer = InitDealer()
 		dealer.PrintDeck()
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dealer.Deck)
+		json.NewEncoder(w).Encode(fmt.Sprintf("%v", dealer.Deck))
 	}).Methods("GET")
 
 	// discards a card in the dealt deck must have dealt a card value can't be larger than number of dealt cards
@@ -60,7 +65,7 @@ func main() {
 		dealer.Discard(pos)
 		dealer.PrintDeck()
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dealer.DiscardDeck)
+		json.NewEncoder(w).Encode(fmt.Sprintf("%v", dealer.DiscardDeck))
 	}).Methods("GET")
 
 	// cuts the deck at the specified position, deck shrinks as cards are dealt. Dealt cards go to the dealtcard slice on the dealer struct
@@ -71,8 +76,15 @@ func main() {
 		dealer.Cut(pos)
 		dealer.PrintDeck()
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(dealer.Deck)
+		json.NewEncoder(w).Encode(fmt.Sprintf("%v", dealer.Deck))
 	}).Methods("GET")
+
+	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		tpl, _ := route.GetPathTemplate()
+		met, _ := route.GetMethods()
+		fmt.Println(tpl, met )
+		return nil
+	})
 
 	http.ListenAndServe("localhost:3000", router)
 }
@@ -225,7 +237,7 @@ func (d *Dealer) Shuffle() {
 
 func (d *Dealer) Cut(pos int) {
 	// check that position is less than size of deck
-	if pos > len(d.Deck.Deck) {
+	if pos > len(d.Deck.Deck) || pos == 0 {
 		fmt.Printf("please choose a position in the deck.\nThe deck shrinks when DealCard is called.\n")
 		return
 	}
