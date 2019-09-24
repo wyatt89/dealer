@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 func main() {
@@ -12,6 +14,10 @@ func main() {
 	fmt.Printf("dealt card: %v\n", dealer.DealCard())
 	fmt.Printf("Discard Deck: %v\n", dealer.DealtCards )
 	fmt.Println(len(dealer.Deck.Deck))
+	dealer.Shuffle()
+	fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	fmt.Printf("dealt card: %v\n", dealer.DealCard())
+
 }
 
 type Dealer struct {
@@ -156,5 +162,20 @@ func (d *Dealer) DealCard() Card {
 	d.DealtCards = append(d.DealtCards, card)
 
 	return card
+}
+
+// Randomizing function taken from https://www.calhoun.io/how-to-shuffle-arrays-and-slices-in-go/ 2nd solution from the bottom
+func (d *Dealer) Shuffle() {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	// We start at the end of the slice, inserting our random
+	// values one at a time.
+	for n := len(d.Deck.Deck); n > 0; n-- {
+		randIndex := r.Intn(n)
+		// We swap the value at index n-1 and the random index
+		// to move our randomly chosen value to the end of the
+		// slice, and to move the value that was at n-1 into our
+		// unshuffled portion of the slice.
+		d.Deck.Deck[n-1], d.Deck.Deck[randIndex] = d.Deck.Deck[randIndex], d.Deck.Deck[n-1]
+	}
 }
 
