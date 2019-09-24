@@ -1,23 +1,59 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"math/rand"
+	"net/http"
+	"sort"
 	"time"
 )
 
 func main() {
-	dealer := Dealer{}.InitDealer()
-	fmt.Println(len(dealer.Deck.Deck))
-	fmt.Printf("%v\n", Suit(0))
-	fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	fmt.Printf("Discard Deck: %v\n", dealer.DealtCards )
-	fmt.Println(len(dealer.Deck.Deck))
-	dealer.Shuffle()
-	fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	dealer := InitDealer()
+	//fmt.Println(len(dealer.Deck.Deck))
+	//dealer.Cut(26)
+	//dealer.PrintDeck()
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("Dealt Cards: %v\n", dealer.DealtCards )
+	//fmt.Println(len(dealer.Deck.Deck))
+	//dealer.Shuffle()
+	//dealer.PrintDeck()
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//
+	//dealer.PrintDeck()
+	//dealer = RebuildDeck()
+	//dealer.PrintDeck()
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("Dealt Cards: %v\n", dealer.DealtCards )
+	//
+	//dealer.Discard(1)
+	//fmt.Printf("Discard Deck: %v\n", dealer.DiscardDeck)
+	//
+	//dealer = InitDealer()
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
+	//dealer.PrintDeck()
+	//dealer.Shuffle()
+	//dealer.PrintDeck()
+	//dealer.Sort()
+	//dealer.PrintDeck()
 
+	router := mux.NewRouter()
+
+	router.HandleFunc("/DealCard", func(w http.ResponseWriter, r *http.Request) {
+		dealer.PrintDeck()
+		card := dealer.DealCard()
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(card.String())
+	}).Methods("GET")
+
+	http.ListenAndServe("localhost:3001", router)
 }
 
 type Dealer struct {
@@ -114,22 +150,7 @@ func (c Card) String() string {
 	return fmt.Sprintf( "%s of %s", c.Face, c.Suit)
 }
 
-func (d Dealer) InitDealer() Dealer {
-	//var deckLength = 52
-
-	//for i  := 0; i < deckLength; i++ {
-	//	fmt.Println(i)
-	//}
-	//deck := make([]Card, 52)
-	//suits := []Suit{Spades, Hearts, Clubs, Diamonds}
-	//faces := []Face{Duece, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace}
-	//for _, suit := range suits {
-	//	//fmt.Println(suit)
-	//	for _, face := range faces {
-	//		//fmt.Println(face)
-	//		d.Deck.Deck = append(d.Deck.Deck, Card{face, suit})
-	//	}
-	//}
+func InitDealer() Dealer {
 	deck := initDeck()
 	return Dealer{
 		Deck: deck,
@@ -138,7 +159,7 @@ func (d Dealer) InitDealer() Dealer {
 	}
 }
 
-func initDeck() Deck{
+func initDeck() Deck {
 	deck := make([]Card, 0)
 	suits := []Suit{Spades, Hearts, Clubs, Diamonds}
 	faces := []Face{Duece, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace}
@@ -152,6 +173,10 @@ func initDeck() Deck{
 	return Deck{
 		Deck: deck,
 	}
+}
+
+func (d *Dealer) PrintDeck() {
+	fmt.Printf("Deck: %v\n", d.Deck.Deck)
 }
 
 // take in a slice or queue and pop the top value
@@ -179,3 +204,40 @@ func (d *Dealer) Shuffle() {
 	}
 }
 
+func (d *Dealer) Cut(pos int) {
+	// check that position is less than size of deck
+	if pos > len(d.Deck.Deck) {
+		fmt.Printf("please choose a position in the deck.\nThe deck shrinks when DealCard is called.\n")
+		return
+	}
+
+	// swap at specified position
+	d.Deck.Deck = append(d.Deck.Deck[pos:], d.Deck.Deck[:pos]...)
+}
+
+func RebuildDeck() Dealer {
+	return InitDealer()
+}
+
+func (d *Dealer) Discard(pos int) {
+	// edge case size is 0
+	if len(d.DealtCards) == 0 {
+		fmt.Println("Must deal a card before it can be discarded")
+		return
+	}
+
+	d.DiscardDeck = append(d.DealtCards[:pos], d.DealtCards[pos+1:]...)
+}
+
+// Sort info obatained from stackoverflow question: https://stackoverflow.com/questions/36122668/how-to-sort-struct-with-multiple-sort-parameters
+func (d *Dealer) Sort() {
+	sort.Slice(d.Deck.Deck, func(i, j int) bool {
+		if d.Deck.Deck[i].Suit < d.Deck.Deck[j].Suit {
+			return true
+		}
+		if d.Deck.Deck[i].Suit > d.Deck.Deck[j].Suit {
+			return false
+		}
+		return d.Deck.Deck[i].Face < d.Deck.Deck[j].Face
+	})
+}
