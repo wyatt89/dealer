@@ -7,45 +7,17 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 )
 
 func main() {
 	dealer := InitDealer()
-	//fmt.Println(len(dealer.Deck.Deck))
-	//dealer.Cut(26)
-	//dealer.PrintDeck()
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("Dealt Cards: %v\n", dealer.DealtCards )
-	//fmt.Println(len(dealer.Deck.Deck))
-	//dealer.Shuffle()
-	//dealer.PrintDeck()
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//
-	//dealer.PrintDeck()
-	//dealer = RebuildDeck()
-	//dealer.PrintDeck()
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("Dealt Cards: %v\n", dealer.DealtCards )
-	//
-	//dealer.Discard(1)
-	//fmt.Printf("Discard Deck: %v\n", dealer.DiscardDeck)
-	//
-	//dealer = InitDealer()
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//fmt.Printf("dealt card: %v\n", dealer.DealCard())
-	//dealer.PrintDeck()
-	//dealer.Shuffle()
-	//dealer.PrintDeck()
-	//dealer.Sort()
-	//dealer.PrintDeck()
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/DealCard", func(w http.ResponseWriter, r *http.Request) {
+	// return the card that was dealt to the client
+	router.HandleFunc("/deck/dealcard", func(w http.ResponseWriter, r *http.Request) {
 		dealer.PrintDeck()
 		card := dealer.DealCard()
 		dealer.PrintDeck()
@@ -53,7 +25,56 @@ func main() {
 		json.NewEncoder(w).Encode(card.String())
 	}).Methods("GET")
 
-	http.ListenAndServe("localhost:3001", router)
+	// shuffles the deck and returns the deck to the client
+	router.HandleFunc("/deck/shuffle", func(w http.ResponseWriter, r *http.Request) {
+		dealer.PrintDeck()
+		dealer.Shuffle()
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(dealer.Deck)
+	}).Methods("GET")
+
+	// sort deck and return the deck to the client
+	router.HandleFunc("/deck/sort", func(w http.ResponseWriter, r *http.Request) {
+		dealer.PrintDeck()
+		dealer.Sort()
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(dealer.Deck)
+	}).Methods("GET")
+
+	// initiliazes a new dealer/deck
+	router.HandleFunc("/deck/rebuilddeck", func(w http.ResponseWriter, r *http.Request) {
+		dealer.PrintDeck()
+		dealer = InitDealer()
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(dealer.Deck)
+	}).Methods("GET")
+
+	// discards a card in the dealt deck must have dealt a card value can't be larger than number of dealt cards
+	router.HandleFunc("/deck/discard/{pos}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		dealer.PrintDeck()
+		pos, _ := strconv.Atoi(vars["pos"])
+		dealer.Discard(pos)
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(dealer.DiscardDeck)
+	}).Methods("GET")
+
+	// cuts the deck at the specified position, deck shrinks as cards are dealt. Dealt cards go to the dealtcard slice on the dealer struct
+	router.HandleFunc("/deck/cut/{pos}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		dealer.PrintDeck()
+		pos, _ := strconv.Atoi(vars["pos"])
+		dealer.Cut(pos)
+		dealer.PrintDeck()
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(dealer.Deck)
+	}).Methods("GET")
+
+	http.ListenAndServe("localhost:3000", router)
 }
 
 type Dealer struct {
@@ -122,7 +143,7 @@ func (f Face) String() string {
 }
 
 const (
-	Duece Face = iota
+	Duece Face = iota + 2
 	Three
 	Four
 	Five
@@ -164,9 +185,7 @@ func initDeck() Deck {
 	suits := []Suit{Spades, Hearts, Clubs, Diamonds}
 	faces := []Face{Duece, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace}
 	for _, suit := range suits {
-		//fmt.Println(suit)
 		for _, face := range faces {
-			//fmt.Println(face)
 			deck = append(deck, Card{face, suit})
 		}
 	}
